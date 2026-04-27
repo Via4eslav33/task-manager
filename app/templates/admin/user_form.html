@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}{% if user %}Редагувати користувача{% else %}Новий користувач{% endif %}{% endblock %}
+{% block page_title %}{% if user %}Редагувати: {{ user.full_name }}{% else %}Новий користувач{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('admin.users') }}" class="btn btn-outline btn-sm">← Назад</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:520px">
+<form method="POST">
+  <div class="card">
+    <div class="card-header">Дані користувача</div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:0">
+
+      <div class="form-group">
+        <label class="form-label">Повне ім'я <span class="req">*</span></label>
+        <input type="text" name="full_name" class="form-control" required
+               value="{{ user.full_name if user else '' }}"
+               placeholder="Прізвище Ім'я По-батькові">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Логін <span class="req">*</span></label>
+          <input type="text" name="username" class="form-control" required
+                 value="{{ user.username if user else '' }}"
+                 {% if user %}readonly style="background:#f9fafb;color:#6b7280"{% endif %}
+                 placeholder="latin_login">
+          {% if user %}<div class="form-hint">Логін не можна змінити</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email <span class="req">*</span></label>
+          <input type="email" name="email" class="form-control" required
+                 value="{{ user.email if user else '' }}"
+                 placeholder="email@example.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Роль</label>
+          <select name="role" class="form-control">
+            <option value="executor" {% if not user or user.role == 'executor' %}selected{% endif %}>Виконавець</option>
+            <option value="manager" {% if user and user.role == 'manager' %}selected{% endif %}>Керівник завдань</option>
+            <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Адміністратор</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Група</label>
+          <select name="group_id" class="form-control">
+            <option value="">— Без групи —</option>
+            {% for g in groups %}
+            <option value="{{ g.id }}" {% if user and user.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Порядок у списку</label>
+        <input type="number" name="sort_order" class="form-control"
+               value="{{ user.sort_order if user else 100 }}"
+               min="1" max="999" style="width:120px">
+        <div class="form-hint">
+          Менше число — вище у списку виконавців. Наприклад: керівництво 1–10, відділи 20–50, інші 100+
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          {% if user %}Новий пароль{% else %}Пароль <span class="req">*</span>{% endif %}
+        </label>
+        <input type="password" name="password" class="form-control"
+               {% if not user %}required{% endif %}
+               placeholder="{% if user %}Залиште порожнім, щоб не змінювати{% else %}Мінімум 6 символів{% endif %}"
+               minlength="6">
+      </div>
+
+      {% if user %}
+      <div class="form-group">
+        <label class="check-item" style="border:1px solid var(--border);border-radius:7px;padding:10px 12px">
+          <input type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %}>
+          <span style="font-size:13.5px">Активний акаунт</span>
+        </label>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:20px">
+    <button type="submit" class="btn btn-primary">
+      {% if user %}Зберегти зміни{% else %}Створити користувача{% endif %}
+    </button>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-outline">Скасувати</a>
+  </div>
+</form>
+</div>
+{% endblock %}

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Завдання{% endblock %} — ТМО2</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --text:        #292929;
+  --dark-green:  #11353F;
+  --green:       #81BDA7;
+  --light-green: #CDE5D8;
+  --blue:        #A8CCCF;
+  --red:         #F05F5F;
+  --orange:      #E8B7A6;
+  --bg:          #f0f6f4;
+  --surface:     #ffffff;
+  --border:      #d8e8e4;
+  --muted:       #5a7a74;
+  --radius:      10px;
+  --shadow:      0 1px 3px rgba(17,53,63,.07);
+  --font:        'Manrope', sans-serif;
+  --font-h:      'Unbounded', sans-serif;
+  --nav-w:       230px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); font-size: 14px; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--nav-w);
+  background: var(--dark-green);
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  transition: transform .25s ease;
+  overflow-y: auto;
+}
+.sidebar-logo { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.sidebar-badge {
+  display: inline-block;
+  background: var(--green);
+  color: var(--dark-green);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 20px; margin-bottom: 6px;
+}
+.sidebar-title { font-family: var(--font-h); font-size: 12px; font-weight: 600; color: #fff; display: block; line-height: 1.4; }
+.sidebar-sub { font-size: 11px; color: rgba(255,255,255,.45); }
+.nav-section { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+.nav-lbl { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.35); letter-spacing: 1px; text-transform: uppercase; padding: 4px 20px 5px; }
+.nav-a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; color: rgba(255,255,255,.65);
+  text-decoration: none; font-size: 13.5px;
+  border-left: 3px solid transparent; transition: all .15s;
+}
+.nav-a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-a.active { background: rgba(129,189,167,.15); color: var(--green); border-left-color: var(--green); font-weight: 600; }
+.nav-a svg { width: 16px; height: 16px; flex-shrink: 0; }
+.sidebar-bottom { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.1); }
+.sidebar-user { font-weight: 600; color: #fff; font-size: 13px; }
+.sidebar-role { color: rgba(255,255,255,.45); font-size: 11.5px; margin-top: 2px; }
+.sidebar-logout { display: inline-block; margin-top: 8px; color: var(--orange); text-decoration: none; font-size: 12px; }
+.sidebar-logout:hover { opacity: .8; }
+
+/* ── Overlay (mobile) ── */
+.s-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 299; }
+.s-overlay.on { display: block; }
+
+/* ── Main ── */
+.main { margin-left: var(--nav-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 28px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-l { display: flex; align-items: center; gap: 10px; }
+.page-title { font-family: var(--font-h); font-size: 15px; font-weight: 600; color: var(--dark-green); }
+.hamburger { background: none; border: none; cursor: pointer; padding: 4px; color: var(--dark-green); display: none; }
+.content { padding: 22px 28px; flex: 1; }
+
+/* ── Card ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-body { padding: 20px; }
+.card-header { padding: 13px 20px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 13.5px; color: var(--dark-green); background: #f7fbf9; border-radius: var(--radius) var(--radius) 0 0; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 7px;
+  font-size: 13px; font-weight: 600; font-family: var(--font);
+  border: 1.5px solid transparent; cursor: pointer;
+  text-decoration: none; transition: all .15s; white-space: nowrap;
+  line-height: 1.4;
+}
+.btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.btn-primary  { background: var(--dark-green); color: #fff; border-color: var(--dark-green); }
+.btn-primary:hover  { background: #0d2830; color: #fff; }
+.btn-outline  { background: transparent; border-color: var(--border); color: var(--text); }
+.btn-outline:hover  { border-color: var(--green); background: var(--light-green); color: var(--dark-green); }
+.btn-danger   { background: transparent; border-color: #fca5a5; color: var(--red); }
+.btn-danger:hover   { background: #fff0f0; }
+.btn-green    { background: var(--green); color: var(--dark-green); border-color: var(--green); font-weight: 700; }
+.btn-green:hover    { background: #6aaa94; color: var(--dark-green); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ── Form ── */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+.req { color: var(--red); }
+.form-control {
+  width: 100%; padding: 8px 12px;
+  border: 1.5px solid var(--border); border-radius: 7px;
+  font-size: 13.5px; font-family: var(--font); color: var(--text); background: var(--surface);
+  transition: border-color .15s;
+}
+.form-control:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(129,189,167,.15); }
+textarea.form-control { resize: vertical; min-height: 80px; }
+select.form-control { cursor: pointer; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-hint { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+.badge-new       { background: #e8f4f0; color: var(--dark-green); }
+.badge-progress  { background: #fdf4ef; color: #b35a1f; }
+.badge-done      { background: var(--light-green); color: #0d5c3a; }
+.badge-cancelled { background: #f3f4f6; color: #6b7280; }
+.badge-high      { background: #fff0f0; color: var(--red); }
+.badge-medium    { background: #fdf4ef; color: #b35a1f; }
+.badge-low       { background: var(--light-green); color: #0d5c3a; }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: #f7fbf9; white-space: nowrap; }
+td { padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f7fbf9; }
+a.row-link { color: var(--text); text-decoration: none; font-weight: 500; }
+a.row-link:hover { color: var(--dark-green); }
+
+/* ── Alerts ── */
+.alert { padding: 11px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.alert-success { background: var(--light-green); color: #0d5c3a; border: 1px solid var(--green); }
+.alert-error   { background: #fff0f0; color: #991b1b; border: 1px solid #fca5a5; }
+
+/* ── Stat grid ── */
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.stat-value { font-family: var(--font-h); font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 12px; color: var(--muted); }
+
+/* ── Two-col grid ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-sidebar { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+
+/* ── Filters ── */
+.filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.filters select { padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; font-family: var(--font); color: var(--text); background: var(--surface); }
+
+/* ── Check list ── */
+.check-list { display: flex; flex-direction: column; gap: 3px; max-height: 200px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: 7px; padding: 8px; }
+.check-item { display: flex; align-items: center; gap: 8px; padding: 5px 7px; border-radius: 5px; cursor: pointer; }
+.check-item:hover { background: var(--bg); }
+.check-item input[type=checkbox] { accent-color: var(--dark-green); width: 14px; height: 14px; flex-shrink: 0; }
+.check-item label { font-size: 13px; cursor: pointer; }
+
+/* ── Ack block ── */
+.ack-block { border: 2px dashed var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ack-block.acked { border-color: var(--green); background: var(--light-green); }
+
+/* ── Topbar right side ── */
+.topbar-r { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.mode-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 20px; padding: 5px 13px;
+  font-size: 12px; font-weight: 500;
+  font-family: var(--font); cursor: pointer; border: 1.5px solid;
+  white-space: nowrap; transition: opacity .15s;
+}
+.mode-btn:hover { opacity: .8; }
+.mode-btn-admin  { background: rgba(240,95,95,.12); border-color: rgba(240,95,95,.45); color: #c0392b; font-weight: 600; }
+.mode-btn-manager{ background: rgba(129,189,167,.12); border-color: var(--border); color: var(--muted); }
+.mode-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-sidebar { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); width: 260px; }
+  .sidebar.open { transform: translateX(0); }
+  .s-overlay.on { display: block; }
+  .hamburger { display: flex !important; }
+  .main { margin-left: 0; }
+  .content { padding: 14px 16px; }
+  .topbar { padding: 8px 12px; gap: 6px; }
+  .page-title { font-size: 13px; }
+  .form-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  table { min-width: 520px; }
+  /* Hide text label in mode button, keep dot only */
+  .mode-label { display: none; }
+  .mode-btn { padding: 5px 8px !important; min-width: 28px; justify-content: center; }
+  /* Shrink primary action buttons text on mobile */
+  .topbar-r .btn span.btn-text { display: none; }
+  .topbar-r .btn { padding: 6px 8px; }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-value { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<div class="s-overlay" id="sOverlay" onclick="closeSidebar()"></div>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-badge">ТМО2</div>
+    <span class="sidebar-title">Управління завданнями</span>
+    <span class="sidebar-sub">{{ current_user.group.name if current_user.group else 'Система' }}</span>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-lbl">Головне</div>
+    <a href="{{ url_for('tasks.list_tasks') }}"
+       class="nav-a {% if request.endpoint and 'task' in request.endpoint %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      Завдання
+    </a>
+    <a href="{{ url_for('calendar.view') }}"
+       class="nav-a {% if request.endpoint == 'calendar.view' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Календар
+    </a>
+    <a href="{{ url_for('calendar.subscribe') }}"
+       class="nav-a {% if request.endpoint == 'calendar.subscribe' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+      </svg>
+      Підписка на календар
+    </a>
+    {% if current_user.can_create_tasks() %}
+    <a href="{{ url_for('analytics.dashboard') }}"
+       class="nav-a {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      Аналітика
+    </a>
+    {% endif %}
+  </div>
+
+  {% if current_user.is_admin() and session.get('admin_mode_active') %}
+  <div class="nav-section">
+    <div class="nav-lbl">Адміністрування</div>
+    <a href="{{ url_for('admin.users') }}"
+       class="nav-a {% if request.endpoint and 'admin' in request.endpoint and 'user' in request.endpoint %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      Користувачі
+    </a>
+    <a href="{{ url_for('admin.groups') }}"
+       class="nav-a {% if request.endpoint and 'group' in request.endpoint %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+      </svg>
+      Групи
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">{{ current_user.full_name }}</div>
+    <div class="sidebar-role">{{ current_user.role_label() }}</div>
+    <a href="{{ url_for('auth.change_password') }}"
+       style="display:inline-block;margin-top:8px;color:rgba(255,255,255,.5);
+              text-decoration:none;font-size:12px;transition:color .15s"
+       onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
+      🔑 Змінити пароль
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="sidebar-logout">← Вийти</a>
+  </div>
+</nav>
+{% endif %}
+
+<div class="main">
+  {% if current_user.is_authenticated %}
+  <div class="topbar">
+    <div class="topbar-l">
+      <button class="hamburger" onclick="openSidebar()">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+    </div>
+    <div class="topbar-r">
+      {% block topbar_actions %}{% endblock %}
+      {% if current_user.is_admin() %}
+      <form method="POST" action="{{ url_for('auth.switch_mode') }}" style="margin:0">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        {% if session.get('admin_mode_active') %}
+        <button type="submit" class="mode-btn mode-btn-admin"
+                title="Режим адміністратора — видно всі завдання. Натисніть щоб повернутись у режим керівника">
+          <span class="mode-dot" style="background:#F05F5F"></span>
+          <span class="mode-label">Адмін-режим</span>
+        </button>
+        {% else %}
+        <button type="submit" class="mode-btn mode-btn-manager"
+                title="Режим керівника — видно тільки ваші завдання. Натисніть для адмін-режиму">
+          <span class="mode-dot" style="background:var(--green)"></span>
+          <span class="mode-label">Режим керівника</span>
+        </button>
+        {% endif %}
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="content">
+    {% for cat, msg in get_flashed_messages(with_categories=True) %}
+    <div class="alert alert-{{ cat }}">
+      {% if cat == 'success' %}✓{% else %}✕{% endif %} {{ msg }}
+    </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script>
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sOverlay').classList.add('on');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sOverlay').classList.remove('on');
+}
+document.querySelectorAll('.nav-a').forEach(function(l) {
+  l.addEventListener('click', closeSidebar);
+});
+</script>
+</body>
+</html>

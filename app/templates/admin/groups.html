@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Групи{% endblock %}
+{% block page_title %}Групи{% endblock %}
+
+{% block content %}
+<div class="grid-sidebar" style="align-items:start">
+
+  <div class="card">
+    {% if groups %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Назва групи</th>
+            <th>Користувачів</th>
+            <th style="text-align:right">Дія</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in groups %}
+          <tr>
+            <td style="font-weight:500">{{ g.name }}</td>
+            <td>
+              {% if g.users %}
+              <span style="font-size:13px">{{ g.users|length }}
+                <span style="color:#6b7280;font-size:12px">
+                  ({{ g.users|map(attribute='full_name')|list|join(', ')|truncate(50) }})
+                </span>
+              </span>
+              {% else %}
+              <span style="color:#9ca3af;font-size:13px">Порожня</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right">
+              {% set other_groups = groups|rejectattr('id','equalto',g.id)|list %}
+              {% if g.users and other_groups %}
+              <!-- Has users — show form with migration target -->
+              <form method="POST" action="{{ url_for('admin.delete_group', group_id=g.id) }}"
+                    onsubmit="return confirm('Видалити групу «{{ g.name }}»?\nКористувачів буде переміщено до обраної групи.')"
+                    style="display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+                <select name="move_to_group" class="form-control" style="width:auto;font-size:12.5px;padding:4px 8px"
+                        required title="Оберіть групу для переміщення користувачів">
+                  <option value="">Перемістити до →</option>
+                  {% for og in other_groups %}
+                  <option value="{{ og.id }}">{{ og.name }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-danger btn-sm">Видалити</button>
+              </form>
+              {% elif not g.users %}
+              <!-- Empty group — delete directly -->
+              <form method="POST" action="{{ url_for('admin.delete_group', group_id=g.id) }}"
+                    onsubmit="return confirm('Видалити порожню групу «{{ g.name }}»?')">
+                <button type="submit" class="btn btn-danger btn-sm">Видалити</button>
+              </form>
+              {% else %}
+              <!-- Last group with users — can't delete -->
+              <span style="font-size:12px;color:#9ca3af">Єдина група — не можна видалити</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body" style="text-align:center;padding:48px;color:#9ca3af">Груп не знайдено</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">Нова група</div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Назва групи <span class="req">*</span></label>
+          <input type="text" name="name" class="form-control" required placeholder="Наприклад: ІТ-відділ">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Створити групу</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

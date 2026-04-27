@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Підписка на календар{% endblock %}
+{% block page_title %}Підписка на календар{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('calendar.view') }}" class="btn btn-outline btn-sm">← Календар</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px">
+
+  <!-- Intro -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-body">
+      <div style="font-size:32px;margin-bottom:10px">📅</div>
+      <div style="font-weight:600;font-size:15px;color:var(--dark-green);margin-bottom:6px">
+        Синхронізація завдань із вашим календарем
+      </div>
+      <div style="font-size:13.5px;color:#6b7280;line-height:1.7">
+        Підпишіться на ваші завдання у Google Calendar, Apple Calendar або будь-якому
+        іншому календарному застосунку що підтримує формат <strong>iCal (.ics)</strong>.
+        Завдання оновлюватимуться автоматично — зазвичай кожні 15–60 хвилин.
+        Синхронізація <strong>одностороння</strong>: зміни у зовнішньому календарі
+        не потрапляють у систему ТМО2.
+      </div>
+    </div>
+  </div>
+
+  <!-- URL block -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">Ваше унікальне посилання для підписки</div>
+    <div class="card-body">
+
+      <div style="margin-bottom:16px">
+        <label class="form-label">iCal URL</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="ical-url" value="{{ https_url }}" readonly
+                 class="form-control" style="font-size:12.5px;font-family:monospace;background:#f7fbf9">
+          <button onclick="copyUrl()" class="btn btn-outline btn-sm" id="copy-btn"
+                  style="flex-shrink:0;white-space:nowrap">
+            📋 Копіювати
+          </button>
+        </div>
+        <div class="form-hint">Це посилання — ваш особистий ключ доступу. Не передавайте його іншим.</div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="{{ webcal_url }}" class="btn btn-primary">
+          📅 Відкрити в Calendar
+          <span style="font-size:11px;opacity:.7;margin-left:2px">(macOS/iOS)</span>
+        </a>
+        <a href="{{ google_url }}" target="_blank" rel="noopener" class="btn btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Додати в Google Calendar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">Інструкція підключення</div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Google Calendar -->
+      <div>
+        <div style="font-weight:600;font-size:13.5px;color:var(--dark-green);margin-bottom:8px;
+                    display:flex;align-items:center;gap:8px">
+          <span style="background:#f0f0f0;border-radius:6px;padding:4px 8px;font-size:12px">Google Calendar</span>
+          Комп'ютер / Android
+        </div>
+        <ol style="font-size:13px;color:#374151;line-height:2;padding-left:20px">
+          <li>Натисніть кнопку <strong>«Додати в Google Calendar»</strong> вище</li>
+          <li>У вікні Google натисніть <strong>«Додати календар»</strong></li>
+          <li>Готово — завдання з'являться у Google Calendar</li>
+        </ol>
+        <div style="font-size:12px;color:#9ca3af;margin-top:4px">
+          Або: Google Calendar → + поряд з «Інші календарі» → «Із URL» → вставте посилання
+        </div>
+      </div>
+
+      <!-- Apple Calendar -->
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-weight:600;font-size:13.5px;color:var(--dark-green);margin-bottom:8px;
+                    display:flex;align-items:center;gap:8px">
+          <span style="background:#f0f0f0;border-radius:6px;padding:4px 8px;font-size:12px">Apple Calendar</span>
+          macOS
+        </div>
+        <ol style="font-size:13px;color:#374151;line-height:2;padding-left:20px">
+          <li>Натисніть кнопку <strong>«Відкрити в Calendar»</strong> вище</li>
+          <li>У вікні Calendar підтвердіть підписку</li>
+          <li>Вкажіть частоту оновлення — рекомендується <strong>«Кожні 15 хвилин»</strong></li>
+        </ol>
+      </div>
+
+      <!-- iPhone -->
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-weight:600;font-size:13.5px;color:var(--dark-green);margin-bottom:8px;
+                    display:flex;align-items:center;gap:8px">
+          <span style="background:#f0f0f0;border-radius:6px;padding:4px 8px;font-size:12px">iPhone / iPad</span>
+          iOS
+        </div>
+        <ol style="font-size:13px;color:#374151;line-height:2;padding-left:20px">
+          <li>Відкрийте посилання нижче з телефону або скануйте QR-код</li>
+          <li>iOS запропонує підписатись на календар — підтвердіть</li>
+          <li>Або: <strong>Налаштування</strong> → <strong>Пошта</strong> → <strong>Акаунти</strong> → <strong>Додати акаунт</strong> → <strong>Інші</strong> → <strong>Підписатися на календар</strong> → вставте URL</li>
+        </ol>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ https_url | urlencode }}"
+               alt="QR код" style="border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:#6b7280">
+            Скануйте камерою iPhone<br>для швидкого підключення
+          </div>
+        </div>
+      </div>
+
+      <!-- Outlook -->
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-weight:600;font-size:13.5px;color:var(--dark-green);margin-bottom:8px;
+                    display:flex;align-items:center;gap:8px">
+          <span style="background:#f0f0f0;border-radius:6px;padding:4px 8px;font-size:12px">Outlook</span>
+          Desktop / Web
+        </div>
+        <ol style="font-size:13px;color:#374151;line-height:2;padding-left:20px">
+          <li>Outlook → <strong>Файл</strong> → <strong>Параметри облікового запису</strong> → <strong>Інтернет-календарі</strong></li>
+          <li>Натисніть <strong>«Новий»</strong> → вставте iCal URL</li>
+          <li>Або у веб-версії: <strong>Додати календар</strong> → <strong>Підписатись із Інтернету</strong></li>
+        </ol>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Reset token -->
+  <div class="card">
+    <div class="card-header" style="color:var(--red)">⚠ Скинути посилання</div>
+    <div class="card-body">
+      <div style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.6">
+        Якщо ваше посилання стало відомим небажаним особам, або ви підозрюєте
+        несанкціонований доступ — згенеруйте нове. Старе посилання одразу перестане працювати,
+        і всі поточні підписки потрібно буде переналаштувати.
+      </div>
+      <form method="POST" action="{{ url_for('calendar.reset_token') }}"
+            onsubmit="return confirm('Скинути посилання? Всі поточні підписки перестануть працювати.')">
+        <button type="submit" class="btn btn-danger">Згенерувати нове посилання</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function copyUrl() {
+  const url = document.getElementById('ical-url').value;
+  navigator.clipboard.writeText(url).then(function() {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Скопійовано';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(function() {
+      btn.textContent = '📋 Копіювати';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2500);
+  });
+}
+</script>
+{% endblock %}

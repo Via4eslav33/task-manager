@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вхід — ТМО2</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --text:        #292929;
+  --dark-green:  #11353F;
+  --green:       #81BDA7;
+  --light-green: #CDE5D8;
+  --blue:        #A8CCCF;
+  --red:         #F05F5F;
+  --orange:      #E8B7A6;
+  --surface:     #ffffff;
+  --border:      #d8e8e4;
+  --font:        'Manrope', sans-serif;
+  --font-h:      'Unbounded', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body {
+  font-family: var(--font);
+  background: linear-gradient(135deg, var(--dark-green) 0%, #1e5060 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+.login-wrap { width: 100%; max-width: 380px; }
+.login-card {
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  padding: 40px 36px;
+}
+.login-badge {
+  display: inline-block;
+  background: var(--light-green);
+  color: var(--dark-green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.login-logo {
+  font-family: var(--font-h);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--dark-green);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.login-sub {
+  font-size: 12.5px;
+  color: #7a9a94;
+  margin-bottom: 28px;
+}
+.form-label { display:block; font-size:12.5px; font-weight:600; color:var(--text); margin-bottom:5px; }
+.form-control {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--text);
+  transition: border-color .15s;
+  margin-bottom: 14px;
+}
+.form-control:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(129,189,167,.15); }
+.btn {
+  width: 100%;
+  padding: 11px;
+  background: var(--dark-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background .15s;
+}
+.btn:hover { background: #0d2830; }
+.alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  background: #fef0f0;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-badge">ТМО2</div>
+    <div class="login-logo">Управління завданнями</div>
+    <div class="login-sub">Друге медичне об'єднання</div>
+
+    {% for cat, msg in get_flashed_messages(with_categories=True) %}
+    <div class="alert">{{ msg }}</div>
+    {% endfor %}
+
+    <form method="POST">
+      <label class="form-label">Логін</label>
+      <input type="text" name="username" class="form-control" placeholder="Введіть логін" autofocus required>
+      <label class="form-label">Пароль</label>
+      <input type="password" name="password" class="form-control" placeholder="Введіть пароль" required>
+      <button type="submit" class="btn">Увійти</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block page_title %}{{ task.title }}{% endblock %}
+
+{% block topbar_actions %}
+{% if current_user.is_admin() or (current_user.is_manager() and task.created_by == current_user.id) %}
+<a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">Редагувати</a>
+<form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
+      onsubmit="return confirm('Видалити завдання?')">
+  <button type="submit" class="btn btn-danger btn-sm">Видалити</button>
+</form>
+{% endif %}
+<a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-outline btn-sm">← Назад</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-sidebar">
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="card">
+      <div class="card-body">
+        {% set sc = {'new':'badge-new','in_progress':'badge-progress','done':'badge-done','cancelled':'badge-cancelled'} %}
+        {% set pc = {'high':'badge-high','medium':'badge-medium','low':'badge-low'} %}
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <span class="badge {{ sc[task.status] }}">{{ task.status_label() }}</span>
+          <span class="badge {{ pc[task.priority] }}">{{ task.priority_label() }}</span>
+          {% if task.group %}<span class="badge" style="background:#f3f4f6;color:#374151">{{ task.group.name }}</span>{% endif %}
+          {% if task.recurrence != 'none' %}
+          <span class="badge" style="background:#e8f0fe;color:#1a56db">↻ {{ task.recurrence_label() }}</span>
+          {% endif %}
+        </div>
+        {% if task.description %}
+        <div style="line-height:1.7;color:#374151;white-space:pre-wrap">{{ task.description }}</div>
+        {% else %}
+        <div style="color:#9ca3af;font-style:italic">Опис не вказано</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if my_assignment %}
+    <div class="ack-block {% if my_assignment.acknowledged %}acked{% endif %}">
+      <div>
+        {% if my_assignment.acknowledged %}
+        <div style="font-weight:600;color:#065f46">✓ Ви ознайомились із завданням</div>
+        {% if my_assignment.acknowledged_at %}
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">{{ my_assignment.acknowledged_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        {% endif %}
+        {% else %}
+        <div style="font-weight:600">Підтвердіть ознайомлення</div>
+        <div style="font-size:12.5px;color:#6b7280;margin-top:3px">Натисніть кнопку щоб підтвердити ознайомлення</div>
+        {% endif %}
+      </div>
+      {% if not my_assignment.acknowledged %}
+      <form method="POST" action="{{ url_for('tasks.acknowledge', task_id=task.id) }}">
+        <button type="submit" class="btn btn-green">Ознайомився</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if current_user.is_admin() and task.assignments %}
+    <div class="card">
+      <div class="card-header">
+        Ознайомлення виконавців
+        <span style="font-weight:400;color:#6b7280;font-size:12px;margin-left:8px">
+          {{ task.ack_count() }} з {{ task.total_assignees() }}
+        </span>
+      </div>
+      <div class="card-body" style="padding:0">
+        {% for a in task.assignments %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #f3f4f6">
+          <div>
+            <div style="font-size:13.5px;font-weight:500">{{ a.user_rel.full_name }}</div>
+            <div style="font-size:12px;color:#6b7280">{{ a.user_rel.group.name if a.user_rel.group else '' }}</div>
+          </div>
+          <div style="text-align:right">
+            {% if a.acknowledged %}
+            <span style="color:#059669;font-size:13px;font-weight:600">✓ Ознайомлений</span>
+            {% if a.acknowledged_at %}
+            <div style="font-size:11px;color:#6b7280">{{ a.acknowledged_at.strftime('%d.%m.%Y %H:%M') }}</div>
+            {% endif %}
+            {% else %}
+            <span style="color:#9ca3af;font-size:13px">Очікується</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% set can_edit = current_user.is_admin() or (current_user.is_manager() and task.created_by == current_user.id) %}
+    {% if my_assignment and task.status not in ('done','cancelled') %}
+    <div class="card">
+      <div class="card-header">Змінити статус</div>
+      <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap">
+        {% if task.status == 'new' %}
+        <form method="POST" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+          <input type="hidden" name="status" value="in_progress">
+          <button type="submit" class="btn btn-outline">Взяти у роботу</button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+          <input type="hidden" name="status" value="done">
+          <button type="submit" class="btn btn-green">Позначити виконаним</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if can_edit %}
+    <div class="card">
+      <div class="card-header">Адмін: змінити статус</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('tasks.update_status', task_id=task.id) }}" style="display:flex;gap:8px;flex-wrap:wrap">
+          {% for val, lbl in [('new','Нове'),('in_progress','Виконується'),('done','Виконано'),('cancelled','Скасовано')] %}
+          <button type="submit" name="status" value="{{ val }}"
+            class="btn btn-sm {% if task.status == val %}btn-primary{% else %}btn-outline{% endif %}">{{ lbl }}</button>
+          {% endfor %}
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if task.attachments %}
+    {% set previewable_exts = ('pdf','png','jpg','jpeg','gif','webp','svg','txt','csv') %}
+    <div class="card">
+      <div class="card-header">Вкладення</div>
+      <div class="card-body" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+        {% for att in task.attachments %}
+        {% set ext = att.filename.rsplit('.',1)[-1].lower() if '.' in att.filename else '' %}
+        {% set can_preview = ext in previewable_exts %}
+        <div class="attachment-item" style="display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+          <div style="flex-shrink: 0; color: #6b7280;">📎</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ att.filename }}</div>
+            <div style="font-size: 11px; color: #9ca3af;">{{ att.uploaded_at.strftime('%d.%m.%Y %H:%M') }}</div>
+          </div>
+          <div style="display: flex; gap: 4px; flex-shrink: 0;">
+            {% if can_preview %}
+            <button type="button" class="btn btn-outline btn-sm" onclick="openPreview('{{ att.filename }}','{{ url_for('tasks.preview_attachment', task_id=task.id, att_id=att.id) }}','{{ ext }}')">👁</button>
+            {% endif %}
+            <a href="{{ url_for('tasks.download_attachment', task_id=task.id, att_id=att.id) }}" class="btn btn-outline btn-sm" download>⬇</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header">Деталі</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Виконавці</div>
+          {% for u in task.assigned_users() %}
+          <div style="font-size:13.5px;margin-bottom:2px">{{ u.full_name }}</div>
+          {% else %}
+          <span style="color:#9ca3af">Не призначено</span>
+          {% endfor %}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Створив</div>
+          <div style="font-size:13.5px">{{ task.creator.full_name }}</div>
+          <div style="font-size:12px;color:#6b7280">{{ task.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="preview-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.65);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;width:92vw;max-width:900px;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="padding:14px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
+      <span id="preview-title" style="font-weight:600"></span>
+      <button onclick="closePreview()" class="btn btn-sm">✕ Закрити</button>
+    </div>
+    <div id="preview-body" style="flex:1;overflow:auto;padding:0"></div>
+  </div>
+</div>
+
+<style>
+#preview-modal.open { display: flex !important; }
+#preview-body iframe { width:100%;height:70vh;border:none; }
+#preview-body img { max-width:100%;max-height:70vh;display:block;margin:auto; }
+</style>
+
+<script>
+function openPreview(name, url, ext) {
+  document.getElementById('preview-title').textContent = name;
+  const body = document.getElementById('preview-body');
+  if (ext === 'pdf') {
+    body.innerHTML = `<iframe src="${url}"></iframe>`;
+  } else if (['png','jpg','jpeg','gif','webp'].includes(ext)) {
+    body.innerHTML = `<img src="${url}" />`;
+  } else {
+    body.innerHTML = '<div style="padding:20px">Перегляд недоступний</div>';
+  }
+  document.getElementById('preview-modal').classList.add('open');
+}
+function closePreview() {
+  document.getElementById('preview-modal').classList.remove('open');
+}
+</script>
+{% endblock %}

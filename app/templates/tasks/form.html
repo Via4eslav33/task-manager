@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% block title %}{% if task %}Редагувати завдання{% else %}Нове завдання{% endif %}{% endblock %}
+{% block page_title %}{% if task %}Редагувати завдання{% else %}Нове завдання{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-outline btn-sm">← Скасувати</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:700px">
+<form method="POST" enctype="multipart/form-data">
+
+  <!-- Основна інформація -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">Основна інформація</div>
+    <div class="card-body">
+
+      <div class="form-group">
+        <label class="form-label">Назва завдання <span class="req">*</span></label>
+        <input type="text" name="title" class="form-control"
+               value="{{ task.title if task else '' }}" required
+               placeholder="Введіть назву завдання">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Зміст завдання</label>
+        <textarea name="description" class="form-control" rows="4"
+                  placeholder="Детальний опис...">{{ task.description if task else '' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Статус</label>
+          <select name="status" class="form-control">
+            {% for val, lbl in [('new','Нове'),('in_progress','Виконується'),('done','Виконано'),('cancelled','Скасовано')] %}
+            <option value="{{ val }}" {% if task and task.status==val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Пріоритет</label>
+          <select name="priority" class="form-control">
+            <option value="low"    {% if task and task.priority=='low'    %}selected{% endif %}>Низький</option>
+            <option value="medium" {% if not task or task.priority=='medium' %}selected{% endif %}>Середній</option>
+            <option value="high"   {% if task and task.priority=='high'   %}selected{% endif %}>Високий</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Група</label>
+        <select name="group_id" class="form-control">
+          <option value="">— Без групи —</option>
+          {% for g in groups %}
+          <option value="{{ g.id }}" {% if task and task.group_id==g.id %}selected{% endif %}>{{ g.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Дата та час -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">Дата та час</div>
+    <div class="card-body">
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group">
+          <label class="form-label">Дата початку</label>
+          <input type="date" name="date_start" class="form-control"
+                 value="{{ task.date_start.strftime('%Y-%m-%d') if task and task.date_start else '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Дата завершення</label>
+          <input type="date" name="date_end" class="form-control"
+                 value="{{ task.date_end.strftime('%Y-%m-%d') if task and task.date_end else '' }}">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group">
+          <label class="form-label">Час початку</label>
+          <input type="time" name="time_start" class="form-control"
+                 value="{{ task.time_start.strftime('%H:%M') if task and task.time_start else '' }}">
+          <div class="form-hint">Залиште порожнім — подія без конкретного часу</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Час завершення</label>
+          <input type="time" name="time_end" class="form-control"
+                 value="{{ task.time_end.strftime('%H:%M') if task and task.time_end else '' }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Повторення</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          {% for val, lbl in [('none','Один раз'),('daily','Щодня'),('weekly','Щотижня'),('monthly','Щомісяця'),('yearly','Щорічно')] %}
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 14px;
+                        border-radius:7px;border:1.5px solid var(--border);font-size:13px;transition:all .15s"
+                 id="rec-lbl-{{ val }}">
+            <input type="radio" name="recurrence" value="{{ val }}"
+                   style="accent-color:var(--dark-green)"
+                   {% if (not task and val=='none') or (task and task.recurrence==val) %}checked{% endif %}
+                   onchange="updateRecLabels()">
+            {{ lbl }}
+          </label>
+          {% endfor %}
+        </div>
+        <div id="rec-hint" class="form-hint" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Вкладення -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      Вкладення
+      <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:8px">
+        до 10 файлів · до 10 МБ кожен
+      </span>
+    </div>
+    <div class="card-body">
+
+      {% if task and task.attachments %}
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;
+                    letter-spacing:.6px;margin-bottom:8px">Завантажені файли</div>
+        {% for att in task.attachments %}
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:8px 12px;border:1px solid var(--border);border-radius:7px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:18px">{{ ext_icon(att.filename) }}</span>
+            <div style="min-width:0">
+              <a href="{{ url_for('tasks.download_attachment', task_id=task.id, att_id=att.id) }}"
+                 style="font-size:13.5px;font-weight:500;color:var(--dark-green);
+                        text-decoration:none;display:block;white-space:nowrap;
+                        overflow:hidden;text-overflow:ellipsis"
+                 download>{{ att.filename }}</a>
+              <span style="font-size:11.5px;color:var(--muted)">{{ att.size_human() }}</span>
+            </div>
+          </div>
+          <form method="POST"
+                action="{{ url_for('tasks.delete_attachment', task_id=task.id, att_id=att.id) }}"
+                onsubmit="return confirm('Видалити вкладення «{{ att.filename }}»?')"
+                style="flex-shrink:0;margin-left:10px">
+            <button type="submit" class="btn btn-danger btn-sm" title="Видалити">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+        {% set remaining = 10 - task.attachments|length %}
+        {% if remaining > 0 %}
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">
+          Можна додати ще {{ remaining }} файл(ів)
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% set current_count = task.attachments|length if task else 0 %}
+      {% if current_count < 10 %}
+      <!-- Drop zone -->
+      <div id="drop-zone"
+           style="border:2px dashed var(--border);border-radius:10px;padding:28px 20px;
+                  text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <div style="font-size:28px;margin-bottom:8px">📎</div>
+        <div style="font-size:13.5px;font-weight:500;color:var(--text)">
+          Перетягніть файли сюди або натисніть для вибору
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">
+          До {{ 10 - current_count }} файлів · PDF, Word, Excel, зображення, архіви · макс. 10 МБ кожен
+        </div>
+      </div>
+
+      <input type="file" id="file-input" name="attachments" multiple
+             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.odt,.ods,.odp,
+                     .png,.jpg,.jpeg,.gif,.webp,.svg,.zip,.rar,.7z"
+             style="display:none" onchange="onFileSelect(this.files)">
+
+      <!-- Preview list -->
+      <div id="file-preview" style="margin-top:12px;display:none">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;
+                    letter-spacing:.6px;margin-bottom:8px">Вибрані файли</div>
+        <div id="file-list"></div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Виконавці -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">Виконавці</div>
+    <div class="card-body">
+      <div class="form-hint" style="margin-bottom:10px">Нові виконавці отримають сповіщення на пошту.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="grp-btns">
+        <button type="button" class="btn btn-outline btn-sm gf-btn active-filter"
+                onclick="filterUsers('all',this)">Усі</button>
+        {% for g in groups %}
+        <button type="button" class="btn btn-outline btn-sm gf-btn"
+                onclick="filterUsers('{{ g.id }}',this)">{{ g.name }}</button>
+        {% endfor %}
+      </div>
+      <div class="check-list" id="users-list">
+        {% for u in users %}
+        {% set is_assigned = task and u in task.assigned_users() %}
+        <label class="check-item" data-group="{{ u.group_id or '' }}">
+          <input type="checkbox" name="assignees" value="{{ u.id }}"
+                 {% if is_assigned %}checked{% endif %}>
+          <span>{{ u.full_name }}
+            {% if u.group %}<span style="font-size:11px;color:#9ca3af"> · {{ u.group.name }}</span>{% endif %}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px">
+    <button type="submit" class="btn btn-primary">
+      {% if task %}Зберегти зміни{% else %}Створити завдання{% endif %}
+    </button>
+    <a href="{{ url_for('tasks.list_tasks') }}" class="btn btn-outline">Скасувати</a>
+  </div>
+</form>
+</div>
+
+<style>
+.active-filter { background: var(--light-green) !important; border-color: var(--green) !important; color: var(--dark-green) !important; }
+#drop-zone.drag-over { border-color: var(--green); background: var(--light-green); }
+.file-row { display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);
+            border-radius:7px;margin-bottom:6px;font-size:13px; }
+.file-row .file-name { flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.file-row .file-size { color:var(--muted);font-size:11.5px;flex-shrink:0; }
+.file-row .file-err  { color:var(--red);font-size:11.5px;flex-shrink:0; }
+</style>
+
+<script>
+const MAX_FILES = 10 - {{ current_count }};
+const MAX_BYTES = 10 * 1024 * 1024;
+const EXT_ICONS = {pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',
+                   txt:'📃',csv:'📊',png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',webp:'🖼',
+                   zip:'📦',rar:'📦','7z':'📦'};
+
+let selectedFiles = new DataTransfer();
+
+function getIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  return EXT_ICONS[ext] || '📎';
+}
+function fmtSize(b) {
+  if (b < 1024)       return b + ' Б';
+  if (b < 1024*1024)  return (b/1024).toFixed(0) + ' КБ';
+  return (b/1024/1024).toFixed(1) + ' МБ';
+}
+function renderPreview() {
+  const list  = document.getElementById('file-list');
+  const wrap  = document.getElementById('file-preview');
+  const files = selectedFiles.files;
+  list.innerHTML = '';
+  if (!files.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  for (let i = 0; i < files.length; i++) {
+    const f   = files[i];
+    const err = f.size > MAX_BYTES ? 'Перевищує 10 МБ' : '';
+    list.innerHTML += `
+      <div class="file-row">
+        <span>${getIcon(f.name)}</span>
+        <span class="file-name">${f.name}</span>
+        <span class="${err ? 'file-err' : 'file-size'}">${err || fmtSize(f.size)}</span>
+        <button type="button" onclick="removeFile(${i})"
+                style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;
+                       line-height:1;padding:0 2px" title="Прибрати">✕</button>
+      </div>`;
+  }
+  // sync to real input
+  const inp = document.getElementById('file-input');
+  inp.files = selectedFiles.files;
+}
+function addFiles(newFiles) {
+  for (let f of newFiles) {
+    if (selectedFiles.files.length >= MAX_FILES) break;
+    selectedFiles.items.add(f);
+  }
+  renderPreview();
+}
+function removeFile(idx) {
+  const dt = new DataTransfer();
+  const files = selectedFiles.files;
+  for (let i = 0; i < files.length; i++) {
+    if (i !== idx) dt.items.add(files[i]);
+  }
+  selectedFiles = dt;
+  renderPreview();
+}
+function onFileSelect(files)  { addFiles(files); }
+function onDragOver(e)  { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  addFiles(e.dataTransfer.files);
+}
+
+// Recurrence labels
+const REC_HINTS = {
+  none:'', daily:'Завдання повторюватиметься щодня, починаючи з дати початку.',
+  weekly:'Повторення щотижня в той самий день.',
+  monthly:'Повторення щомісяця в те саме число.',
+  yearly:'Повторення щорічно в ту саму дату.',
+};
+function updateRecLabels() {
+  const val = document.querySelector('input[name="recurrence"]:checked')?.value || 'none';
+  document.getElementById('rec-hint').textContent = REC_HINTS[val] || '';
+  document.querySelectorAll('label[id^="rec-lbl-"]').forEach(l => {
+    const checked = l.querySelector('input').checked;
+    l.style.background   = checked ? 'var(--light-green)' : '';
+    l.style.borderColor  = checked ? 'var(--green)' : 'var(--border)';
+    l.style.color        = checked ? 'var(--dark-green)' : '';
+  });
+}
+function filterUsers(gid, btn) {
+  document.querySelectorAll('.gf-btn').forEach(b => b.classList.remove('active-filter'));
+  btn.classList.add('active-filter');
+  document.querySelectorAll('#users-list .check-item').forEach(item => {
+    item.style.display = (gid === 'all' || item.dataset.group == gid) ? '' : 'none';
+  });
+}
+document.addEventListener('DOMContentLoaded', updateRecLabels);
+</script>
+{% endblock %}

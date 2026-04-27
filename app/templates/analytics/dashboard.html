@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Аналітика{% endblock %}
+{% block page_title %}Аналітика{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value" style="color:#1d4ed8">{{ total }}</div>
+    <div class="stat-label">Усього завдань</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#6366f1">{{ new_c }}</div>
+    <div class="stat-label">Нових</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#d97706">{{ inprog }}</div>
+    <div class="stat-label">Виконується</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#059669">{{ done_c }}</div>
+    <div class="stat-label">Виконано</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#dc2626">{{ overdue }}</div>
+    <div class="stat-label">Прострочено</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#7c3aed">{{ ack_rate }}%</div>
+    <div class="stat-label">Ознайомлення</div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:20px">
+
+  <!-- By group -->
+  <div class="card">
+    <div class="card-header">Завдання за групами</div>
+    <div class="card-body">
+      {% if groups_data %}
+      {% set max_val = groups_data | map(attribute=1) | max %}
+      {% for name, cnt in groups_data %}
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>{{ name or '—' }}</span>
+          <span style="font-weight:600">{{ cnt }}</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:4px;height:6px;overflow:hidden">
+          <div style="background:#1d4ed8;height:100%;border-radius:4px;width:{% if max_val > 0 %}{{ (cnt / max_val * 100)|int }}%{% else %}0%{% endif %};transition:width .4s"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="color:#9ca3af;font-size:13px">Немає даних</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- By status -->
+  <div class="card">
+    <div class="card-header">Завдання за статусом</div>
+    <div class="card-body">
+      {% set status_map = {'new': ('Нові', '#6366f1'), 'in_progress': ('Виконується', '#f59e0b'), 'done': ('Виконано', '#10b981'), 'cancelled': ('Скасовано', '#9ca3af')} %}
+      {% if status_data %}
+      {% set max_val = status_data | map(attribute=1) | max %}
+      {% for st, cnt in status_data %}
+      {% set label, color = status_map.get(st, (st, '#6b7280')) %}
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>{{ label }}</span>
+          <span style="font-weight:600">{{ cnt }}</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:4px;height:6px;overflow:hidden">
+          <div style="background:{{ color }};height:100%;border-radius:4px;width:{% if max_val > 0 %}{{ (cnt / max_val * 100)|int }}%{% else %}0%{% endif %};transition:width .4s"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="color:#9ca3af;font-size:13px">Немає даних</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<div class="grid-2">
+
+  <!-- Top executors -->
+  <div class="card">
+    <div class="card-header">Топ виконавців (за виконаними)</div>
+    <div class="card-body">
+      {% if top_users %}
+      {% for name, cnt in top_users %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:22px;height:22px;background:#eff6ff;color:#1d4ed8;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">{{ loop.index }}</span>
+          <span style="font-size:13.5px">{{ name }}</span>
+        </div>
+        <span style="font-size:13px;font-weight:600;color:#059669">{{ cnt }} ✓</span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="color:#9ca3af;font-size:13px">Немає даних</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent tasks -->
+  <div class="card">
+    <div class="card-header">Останні завдання</div>
+    <div class="card-body" style="padding:0">
+      {% for task in recent %}
+      {% set sc = {'new':'badge-new','in_progress':'badge-progress','done':'badge-done','cancelled':'badge-cancelled'} %}
+      <a href="{{ url_for('tasks.view_task', task_id=task.id) }}"
+         style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #f3f4f6;text-decoration:none;color:inherit">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">{{ task.title }}</div>
+          <div style="font-size:11.5px;color:#9ca3af">{{ task.created_at.strftime('%d.%m.%Y') }}</div>
+        </div>
+        <span class="badge {{ sc[task.status] }}">{{ task.status_label() }}</span>
+      </a>
+      {% else %}
+      <div style="padding:16px;color:#9ca3af;font-size:13px">Немає завдань</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+{% if overdue > 0 %}
+<div class="alert alert-error" style="margin-top:20px">
+  ⚠ Є <strong>{{ overdue }}</strong> прострочених завдань.
+  <a href="{{ url_for('tasks.list_tasks', status='in_progress') }}" style="color:inherit;margin-left:8px;font-weight:600">Переглянути →</a>
+</div>
+{% endif %}
+{% endblock %}

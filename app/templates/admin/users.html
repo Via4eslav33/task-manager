@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Користувачі{% endblock %}
+{% block page_title %}Користувачі{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('admin.new_user') }}" class="btn btn-primary">
+  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+  </svg>
+  Новий користувач
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  {% if users %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Ім'я</th>
+          <th>Логін</th>
+          <th>Email</th>
+          <th>Група</th>
+          <th>Роль</th>
+          <th>Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:500">{{ u.full_name }}</td>
+          <td style="color:#6b7280;font-size:13px">{{ u.username }}</td>
+          <td style="color:#6b7280;font-size:13px">{{ u.email }}</td>
+          <td style="font-size:13px">{{ u.group.name if u.group else '—' }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+            <span class="badge badge-new">Адміністратор</span>
+            {% elif u.role == 'manager' %}
+            <span class="badge badge-progress">Керівник завдань</span>
+            {% else %}
+            <span class="badge badge-cancelled">Виконавець</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge badge-done">Активний</span>
+            {% else %}
+            <span class="badge badge-cancelled">Деактивований</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right">
+            <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn-outline btn-sm">Редагувати</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body" style="text-align:center;padding:48px;color:#9ca3af">
+    Користувачів не знайдено
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

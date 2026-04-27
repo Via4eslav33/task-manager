@@ -1,0 +1,13 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-Mail==0.10.0
+Flask-APScheduler==1.13.1
+PyMySQL==1.1.1
+cryptography==42.0.8
+Werkzeug==3.0.3
+gunicorn==22.0.0
+pytz==2024.1
+python-magic==0.4.27
+tzdata
+

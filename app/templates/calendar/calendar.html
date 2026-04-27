@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% block title %}Календар{% endblock %}
+{% block page_title %}Календар{% endblock %}
+
+{% block topbar_actions %}
+{% if current_user.can_create_tasks() %}
+<a href="{{ url_for('tasks.new_task') }}" class="btn btn-primary btn-sm">
+  <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+  </svg>
+  <span class="btn-text">Нове завдання</span>
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:12px">
+  <div class="card-body" style="padding:12px">
+    <div style="width: 100%; overflow-x: auto; padding-bottom: 5px;">
+        <div id="calendar" style="min-width: 450px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="cal-legend">
+  <span><i style="background:var(--dark-green)"></i>Нове</span>
+  <span><i style="background:var(--orange)"></i>Виконується</span>
+  <span><i style="background:var(--green)"></i>Виконано</span>
+  <span><i style="background:#9ca3af"></i>Скасовано</span>
+  <span class="cal-legend-sep">Рамка: <b style="color:var(--red)">■</b> Вис · <b style="color:var(--orange)">■</b> Сер · <b style="color:var(--green)">■</b> Низ</span>
+  <span><b style="color:#1a56db;font-size:11px">↻</b> повторюване</span>
+</div>
+
+<div id="ev-tooltip" style="display:none;position:fixed;z-index:9999;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 8px 24px rgba(17,53,63,.15);padding:14px 16px;
+  min-width:220px;max-width:300px;">
+  <div id="tt-title" style="font-weight:600;font-size:13.5px;color:var(--dark-green);margin-bottom:8px;line-height:1.4"></div>
+  <div id="tt-desc"  style="font-size:12.5px;color:#4b5563;margin-bottom:8px;line-height:1.5;display:none"></div>
+  <div id="tt-meta"  style="display:flex;flex-direction:column;gap:4px"></div>
+  <a id="tt-link" href="#" class="btn btn-outline btn-sm" style="display:none; width:100%; text-align:center; margin-top:12px; justify-content:center;">Перейти до завдання</a>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rrule@2.7.2/dist/es5/rrule.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/rrule@6.1.11/index.global.min.js"></script>
+
+<style>
+/* ── Legend ── */
+.cal-legend { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #6b7280; padding: 0 4px; }
+.cal-legend span { display: flex; align-items: center; gap: 5px; }
+.cal-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.cal-legend-sep { margin-left: 4px; }
+
+/* ── FullCalendar base ── */
+#calendar { font-family: var(--font); }
+.fc .fc-toolbar { gap: 6px; flex-wrap: wrap; }
+.fc .fc-toolbar-title { font-family: var(--font-h); font-size: 15px; color: var(--dark-green); }
+
+.fc .fc-button {
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  background: var(--surface) !important;
+  border: 1.5px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+  padding: 5px 12px; border-radius: 6px !important;
+}
+.fc .fc-button:hover { background: var(--light-green) !important; border-color: var(--green) !important; color: var(--dark-green) !important; }
+.fc .fc-today-button { background: var(--dark-green) !important; border-color: var(--dark-green) !important; color: #fff !important; font-weight: 600 !important; }
+.fc .fc-today-button:disabled { background: var(--light-green) !important; border-color: var(--green) !important; color: var(--dark-green) !important; opacity: 1 !important; }
+.fc .fc-button-active { background: var(--light-green) !important; border-color: var(--green) !important; color: var(--dark-green) !important; font-weight: 600 !important; }
+.fc .fc-button-group .fc-button { border-radius: 0 !important; }
+.fc .fc-button-group .fc-button:first-child { border-radius: 6px 0 0 6px !important; }
+.fc .fc-button-group .fc-button:last-child  { border-radius: 0 6px 6px 0 !important; }
+
+/* Events */
+.fc .fc-daygrid-event { border-radius: 4px; font-size: 12px; font-family: var(--font); font-weight: 500; border-width: 2px; padding: 2px 5px; cursor: pointer; }
+.fc .fc-timegrid-event { border-radius: 4px; font-size: 12px; font-family: var(--font); font-weight: 500; border-width: 2px; }
+.fc-event-recur-badge { display: inline-block; font-size: 10px; font-weight: 700; color: #1a56db; background: rgba(26,86,219,.12); border-radius: 3px; padding: 0 3px; margin-right: 4px; line-height: 14px; vertical-align: middle; font-family: var(--font); }
+.fc-day-today { background: rgba(205,229,216,.22) !important; }
+
+/* List view */
+.fc .fc-list-event-title a { font-size: 13.5px; font-family: var(--font); color: var(--text); }
+.fc .fc-list-event:hover td { background: #f7fbf9 !important; cursor: pointer; }
+.fc .fc-list-day-cushion { background: var(--light-green) !important; font-family: var(--font-h) !important; font-size: 11.5px; letter-spacing: .4px; }
+.fc .fc-list-day-text, .fc .fc-list-day-side-text { font-family: var(--font-h); color: var(--dark-green); }
+.fc .fc-list-empty { font-family: var(--font); color: var(--muted); font-size: 13.5px; }
+
+/* ══ MOBILE COMPACT STYLES ══ */
+@media (max-width: 639px) {
+  .fc .fc-toolbar { align-items: center; }
+  .fc .fc-toolbar-chunk { display: flex; align-items: center; }
+  .fc .fc-toolbar-title { font-size: 13px !important; }
+  .fc .fc-button { font-size: 12px !important; padding: 4px 8px !important; }
+  .fc .fc-toolbar .fc-right-view-buttons { display: none; }
+  
+  .fc .fc-footer-toolbar { justify-content: center; padding: 10px 0 4px; border-top: 1px solid var(--border); margin-top: 6px; }
+  .fc .fc-footer-toolbar .fc-button { font-size: 13px !important; padding: 6px 14px !important; }
+
+  .fc .fc-daygrid-day-number { font-size: 11px; padding: 2px 4px; width: 100%; text-align: center; }
+  
+  /* ПЕРЕРОБЛЕНО: Події як горизонтальні смужки замість крапок */
+  .fc-dayGridMonth-view .fc-daygrid-event {
+    width: auto !important; /* Розтягується на ширину клітинки */
+    height: 6px !important; /* Товщина смужки */
+    border-radius: 2px !important;
+    padding: 0 !important;
+    margin: 1.5px 2px !important; /* Відступи між смужками і від країв */
+    border: none !important;
+    min-height: unset !important;
+    display: block !important;
+  }
+  
+  /* Ховаємо текст */
+  .fc-dayGridMonth-view .fc-daygrid-event .fc-event-main,
+  .fc-dayGridMonth-view .fc-daygrid-event .fc-event-title,
+  .fc-dayGridMonth-view .fc-daygrid-event .fc-event-time,
+  .fc-dayGridMonth-view .fc-event-recur-badge {
+    display: none !important;
+  }
+  
+  /* Контейнер для смужок */
+  .fc-dayGridMonth-view .fc-daygrid-day-events {
+    display: flex !important;
+    flex-direction: column !important; /* Вишиковуємо одна під одною */
+    gap: 1px;
+    margin: 0 !important;
+  }
+  
+  .fc-dayGridMonth-view .fc-daygrid-event-harness { margin: 0 !important; }
+  .fc-dayGridMonth-view .fc-daygrid-more-link { font-size: 10px; margin-top: 2px; text-align: center; display: block; }
+
+  /* Легенда */
+  .cal-legend { gap: 8px; font-size: 11px; justify-content: center; }
+  .cal-legend-sep { display: none; }
+}
+
+/* Для ПК повертаємо 100% ширини без примусового мінімуму */
+@media (min-width: 640px) {
+  #calendar { min-width: unset !important; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  var isMobile = window.innerWidth < 640;
+
+  /* ── Tooltip ── */
+  var tooltip  = document.getElementById('ev-tooltip');
+  var ttTitle  = document.getElementById('tt-title');
+  var ttDesc   = document.getElementById('tt-desc');
+  var ttMeta   = document.getElementById('tt-meta');
+  var ttLink   = document.getElementById('tt-link');
+  var hideTimer = null;
+
+  function showTooltip(info) {
+    clearTimeout(hideTimer);
+    var p    = info.event.extendedProps;
+    var rect = info.el.getBoundingClientRect();
+    var vpW  = window.innerWidth;
+    var vpH  = window.innerHeight;
+
+    ttTitle.textContent = info.event.title;
+    if (p.description && p.description.trim()) {
+      ttDesc.textContent = p.description.length > 120 ? p.description.substring(0,120)+'…' : p.description;
+      ttDesc.style.display = '';
+    } else { ttDesc.style.display = 'none'; }
+
+    var rows = [];
+    if (p.status)    rows.push(['Статус',     p.status]);
+    if (p.priority)  rows.push(['Пріоритет',  p.priority]);
+    if (p.assignees) rows.push(['Виконавці',  p.assignees]);
+    if (p.recurrence && p.recurrence !== 'Один раз') rows.push(['Повторення', p.recurrence]);
+    if (p.timeRange) rows.push(['Час',        p.timeRange]);
+
+    ttMeta.innerHTML = rows.map(function(r) {
+      return '<div style="display:flex;gap:6px;font-size:12px">'
+        +'<span style="color:var(--muted);min-width:72px;flex-shrink:0">'+r[0]+'</span>'
+        +'<span style="color:var(--text);font-weight:500">'+r[1]+'</span></div>';
+    }).join('');
+
+    if (info.event.url) {
+      ttLink.href = info.event.url;
+      ttLink.style.display = isMobile ? 'flex' : 'none';
+    } else {
+      ttLink.style.display = 'none';
+    }
+
+    tooltip.style.display = 'block';
+    
+    if (isMobile) {
+      tooltip.style.left = '50%';
+      tooltip.style.top = '50%';
+      tooltip.style.transform = 'translate(-50%, -50%)';
+    } else {
+      tooltip.style.transform = 'none';
+      var tipW = 300, tipH = tooltip.offsetHeight || 160;
+      var left = rect.right + 10;
+      var top  = rect.top;
+      if (left + tipW > vpW - 10) left = rect.left - tipW - 10;
+      if (left < 8)               left = 8;
+      if (top  + tipH > vpH - 10) top  = vpH - tipH - 10;
+      if (top  < 8)               top  = 8;
+      tooltip.style.left = left+'px';
+      tooltip.style.top  = top +'px';
+    }
+  }
+
+  function hideTooltip() {
+    hideTimer = setTimeout(function(){ tooltip.style.display='none'; }, 80);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (isMobile && tooltip.style.display === 'block') {
+      if (!tooltip.contains(e.target) && !e.target.closest('.fc-event')) {
+        tooltip.style.display = 'none';
+      }
+    }
+  });
+
+  /* ── Calendar init ── */
+  var cal = new FullCalendar.Calendar(document.getElementById('calendar'), {
+    locale: 'uk',
+    initialView: isMobile ? 'listWeek' : 'dayGridMonth',
+    headerToolbar: isMobile
+      ? { left: 'prev,next', center: 'title', right: 'today' }
+      : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+    footerToolbar: isMobile
+      ? { center: 'dayGridMonth,timeGridWeek,listWeek' }
+      : false,
+    buttonText: {
+      today:    'Сьогодні',
+      month:    'Місяць',
+      week:     'Тиждень',
+      day:      'День',
+      listWeek: 'Список',
+    },
+    slotMinTime:  '07:00:00',
+    slotMaxTime:  '22:00:00',
+    allDayText:   'Весь день',
+    nowIndicator: true,
+    firstDay:     1,
+    height:       'auto',
+    
+    // Більше подій, оскільки тепер це тонкі смужки
+    dayMaxEvents: isMobile ? 6 : true,
+    events: '/calendar/events',
+
+    eventClick: function(info) {
+      info.jsEvent.preventDefault();
+      
+      if (isMobile && info.view.type === 'dayGridMonth') {
+        showTooltip(info);
+      } else {
+        if (info.event.url) {
+          window.location.href = info.event.url;
+        }
+      }
+    },
+
+    eventDidMount: function(info) {
+      var p = info.event.extendedProps;
+      var isRecurring = p.recurrence && p.recurrence !== 'Один раз';
+      if (isRecurring) {
+        var titleEl = info.el.querySelector('.fc-event-title');
+        if (titleEl) {
+          var badge = document.createElement('span');
+          badge.className   = 'fc-event-recur-badge';
+          badge.textContent = '↻';
+          titleEl.insertBefore(badge, titleEl.firstChild);
+        }
+        var listTitle = info.el.querySelector('.fc-list-event-title a');
+        if (listTitle && !listTitle.querySelector('.fc-event-recur-badge')) {
+          var b2 = document.createElement('span');
+          b2.className   = 'fc-event-recur-badge';
+          b2.textContent = '↻';
+          b2.style.marginRight = '5px';
+          listTitle.insertBefore(b2, listTitle.firstChild);
+        }
+      }
+      if (!isMobile) {
+        info.el.addEventListener('mouseenter', function(){ showTooltip(info); });
+        info.el.addEventListener('mouseleave', hideTooltip);
+      }
+    },
+  });
+
+  cal.render();
+
+  if (!isMobile) {
+      document.getElementById('calendar').addEventListener('mouseleave', hideTooltip);
+  }
+});
+</script>
+{% endblock %}

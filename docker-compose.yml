@@ -1,0 +1,52 @@
+services:
+
+  taskmanager:
+    build: .
+    container_name: taskmanager-app
+    restart: unless-stopped
+    ports:
+      - "5050:5000"        # змініть 5050 на потрібний порт
+    environment:
+      SECRET_KEY: "7c2VOfM94LCArAZPvqNVaKPiUQ/F1e0wFf3zxTtPkK9TRGKR4j3/pweuApIgRDrFVYmRcPf7vam736Cg4IZaD"
+      DATABASE_URL: "mysql+pymysql://taskuser:superpass@taskmanager-db:3306/taskmanager"
+      # ── Пошта (Gmail приклад) ──
+      MAIL_SERVER: "smtp.gmail.com"
+      MAIL_PORT: "587"
+      MAIL_USE_TLS: "true"
+      MAIL_USERNAME: "lvivtmo2@gmail.com"
+      MAIL_PASSWORD: "nhmz wsqn fpjr aggw"
+      MAIL_DEFAULT_SENDER: "lvivtmo2@gmail.com"
+    depends_on:
+      taskmanager-db:
+        condition: service_healthy
+    volumes:
+      - taskmanager-uploads:/app/uploads
+    networks:
+      - taskmanager-net
+
+  taskmanager-db:
+    image: mariadb:10.6
+    container_name: taskmanager-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "rootpass"
+      MYSQL_DATABASE: "taskmanager"
+      MYSQL_USER: "taskuser"
+      MYSQL_PASSWORD: "superpass"
+    volumes:
+      - taskmanager-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - taskmanager-net
+
+volumes:
+  taskmanager-db-data:
+  taskmanager-uploads:
+
+networks:
+  taskmanager-net:
+    driver: bridge
