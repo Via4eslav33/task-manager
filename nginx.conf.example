@@ -1,9 +1,9 @@
-# /etc/nginx/sites-available/tasks.tmo2lviv.pp.ua
+# /etc/nginx/sites-available/example.com
 # Замініть домен на свій
 
 server {
     listen 80;
-    server_name tasks.tmo2lviv.pp.ua;   # ← змініть на свій домен
+    server_name example.com;   # ← змініть на свій домен
 
     client_max_body_size 10M;
 
