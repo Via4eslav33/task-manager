@@ -78,32 +78,6 @@ curl -I http://127.0.0.1:5050/
 
 ---
 
-## Крок 4 — Налаштування Nginx
-
-```bash
-sudo nano /etc/nginx/sites-available/tasks.tmo2lviv.pp.ua
-```
-
-Вставте вміст файлу `nginx.conf.example` (відредагувавши домен).
-
-```bash
-sudo ln -s /etc/nginx/sites-available/tasks.tmo2lviv.pp.ua \
-           /etc/nginx/sites-enabled/
-
-sudo nginx -t && sudo systemctl reload nginx
-```
-
----
-
-## Крок 5 — Cloudflare Tunnel
-
-У панелі Cloudflare Tunnel додайте новий публічний hostname:
-- **Subdomain:** tasks (або інший)
-- **Domain:** tmo2lviv.pp.ua
-- **Service:** HTTP → localhost:80
-
----
-
 ## Перший вхід
 
 Після запуску відкрийте додаток у браузері.
